@@ -9,6 +9,5 @@ chef_version '>= 12.8' if respond_to?(:chef_version)
 
 gem "vault"
 
-# issues_url 'https://github.com/<insert_org_here>/vaultron/issues'
-
-# source_url 'https://github.com/<insert_org_here>/vaultron'
+issues_url 'https://github.com/alanwthatcher/vaultron/issues'
+source_url 'https://github.com/alanwthatcher/vaultron'
