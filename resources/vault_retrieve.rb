@@ -5,8 +5,8 @@ provides :nf_secret
 
 property :path, String, name_property: true
 property :destination, String
-property :address, String, default: 'http://slvdclvbox01.nfcutest.net:8200'
-property :approle, String, equal_to: ['chef', 'unix', node['application']], default: 'chef'
+property :address, String, default: "#{node['vault']['fqdn']}:#{node['vault']['port']}"
+property :approle, String, equal_to: ['chef', 'unix'], default: 'chef'
 
 action :single_read do
   # run_state destination defaults to path
