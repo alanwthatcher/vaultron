@@ -1,12 +1,12 @@
 require 'vault'
 
-resource_name :nf_secret
-provides :nf_secret
+resource_name :vault_retrieve
+provides :vault_retrieve
 
 property :path, String, name_property: true
 property :destination, String
 property :address, String, default: "#{node['vault']['fqdn']}:#{node['vault']['port']}"
-property :approle, String, equal_to: ['chef', 'unix'], default: 'chef'
+property :approle, String, equal_to: [ 'chef' ], default: 'chef'
 
 action :single_read do
   # run_state destination defaults to path
