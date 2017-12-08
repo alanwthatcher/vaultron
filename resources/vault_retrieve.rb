@@ -6,7 +6,9 @@ provides :vault_retrieve
 property :path, String, name_property: true
 property :destination, String
 property :address, String, default: "#{node['vault']['fqdn']}:#{node['vault']['port']}"
-property :approle, String, equal_to: [ 'chef' ], default: 'chef'
+property :approle, String, equal_to: ['chef'], default: 'chef'
+property :token, String
+property :payload, Hash
 
 action :single_read do
   # run_state destination defaults to path
@@ -27,4 +29,18 @@ action :single_read do
 
   # Retrieve data
   node.run_state[destination] = secret.data
+end
+
+action :transit_decrypt do
+  # Instantiate vault
+  vault = Vault::Client.new(address: address)
+
+  # Use provided token
+  vault.token = token
+
+  # Return decrypted base64 string
+  decrypted = vault.logical.write(path, payload)
+
+  # Assign decoded value to destination
+  node.run_state[destination] = decrypted.data.plaintext.decode64
 end
