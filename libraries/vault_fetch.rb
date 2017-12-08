@@ -5,17 +5,14 @@ module VaultRetrieve
   class Helpers
     def self.vault_read(node, approle, path)
       # Only allow necessary approles, always allow chef and node application
-      approles = [ 'chef', node['application'] ]
+      approles = [ 'chef' ]
 
-      # Allow unix approle if unix server
-      approles + ['unix'] if node.aix? or node.rhel?
-
-      if approles.include? approle
+        if approles.include? approle
         # Token to generate secret
         secret_generator = 'cd7a5bdc-222a-85c6-8f94-580ea2ee03da'
 
         # Instantiate vault
-        vault = Vault::Client.new(address: 'http://slvdclvbox01.nfcutest.net:8200')
+        vault = Vault::Client.new(address: #{node['vault']['fqdn']}:#{node['vault']['port']}")
 
         # AppRole login
         vault.token = secret_generator
