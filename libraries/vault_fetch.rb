@@ -1,7 +1,7 @@
 require 'chef/provider/lwrp_base'
 require 'vault'
 
-module NFSec
+module VaultRetrieve
   class Helpers
     def self.vault_read(node, approle, path)
       # Only allow necessary approles, always allow chef and node application
