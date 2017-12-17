@@ -1,30 +1,81 @@
 require 'chef/provider/lwrp_base'
 require 'vault'
 
-module VaultRetrieve
+module Vaultron
   class Helpers
-    def self.vault_read(node, approle, path)
-      # Only allow necessary approles, always allow chef and node application
+    def self.transit_decode(address, token, path, payload)
+      # Vault singleton
+      Vault.address = address
 
-      # Token to generate secret
-      secret_generator = 'cd7a5bdc-222a-85c6-8f94-580ea2ee03da'
+      # Auth with provided token
+      Vault.token = token
 
-      # Instantiate vault
-      vault = Vault::Client.new(address: "#{node['vault']['fqdn']}:#{node['vault']['port']}")
+      # Decrypt
+      decrypted = Vault.logical.write(path, ciphertext: payload)
 
-      # AppRole login
-      vault.token = secret_generator
-      secret_id = vault.approle.create_secret_id(approle).data.secret_id
-      vault.auth.approle(approle, secret_id)
+      # Return decoded string
+      Base64.decode64(decrypted.data[:plaintext])
+    end
 
-      # Secret retrieval
-      secret = vault.logical.read(path)
+    def self.read(address, token, path, approle = nil, data_only = true)
+      # Vault singleton
+      Vault.address = address
 
-      Chef::Log.warn(path)
-      Chef::Log.warn(secret.data)
+      # Auth with given token
+      Vault.token = token
 
-      # Return data
-      secret.data
+      # If approle is passed, use approle login
+      unless approle.nil?
+        # Lookup role-id
+        approle_id = Vault.approle.role_id(approle)
+
+        # Generate a secret-id
+        secret_id = Vault.approle.create_secret_id(approle).data[:secret_id]
+
+        # Login with approle auth provider
+        Vault.auth.approle(approle_id, secret_id)
+      end
+
+      # Retrieve and return secret
+      secret = Vault.logical.read(path)
+      if data_only
+        secret.data
+      else
+        secret
+      end
+    end
+
+    def self.read_multi(address, token, path, approle = nil, data_only = true)
+      # holder for multiple secrets
+      secrets = Mash.new
+
+      # use Vault singleton
+      Vault.address = address
+
+      # Auth with token provided
+      Vault.token = token
+
+      # If approle is passed, use approle login
+      unless approle.nil?
+        # Lookup role-id
+        approle_id = Vault.approle.role_id(approle)
+
+        # Generate a secret-id
+        secret_id = Vault.approle.create_secret_id(approle).data[:secret_id]
+
+        # Login with approle auth provider
+        Vault.auth.approle(approle_id, secret_id)
+      end
+
+      # List and read each path, excluding sub-paths
+      Vault.logical.list(path).each do |s|
+        next if s.end_with?('/')
+        secret = Vault.logical.read("#{path}/#{s}")
+        secrets[s] = data_only ? secret.data : secret
+      end
+
+      # Return secrets
+      secrets
     end
   end
 end
