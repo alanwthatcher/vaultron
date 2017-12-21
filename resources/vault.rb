@@ -98,3 +98,32 @@ action :transit_decrypt do
   # Fire notification
   updated_by_last_action(true)
 end
+
+action :write do
+  # run_state path defaults to destination
+  new_resource.path ||= new_resource.destination
+
+  # use Vault singleton
+  Vault.address = new_resource.address
+
+  # Auth with token provided
+  Vault.token = new_resource.token
+
+  # If approle is passed, use approle login
+  if property_is_set?(:approle)
+    # Lookup role-id
+    approle_id = Vault.approle.role_id(new_resource.approle)
+
+    # Generate a secret-id
+    secret_id = Vault.approle.create_secret_id(new_resource.approle).data[:secret_id]
+
+    # Login with approle auth provider
+    Vault.auth.approle(approle_id, secret_id)
+  end
+
+  # Write to Vault
+  Vault.logical.write(new_resource.path, new_resource.payload)
+
+  # Fire notification
+  updated_by_last_action(true)
+end
