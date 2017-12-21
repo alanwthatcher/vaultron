@@ -77,5 +77,28 @@ module Vaultron
       # Return secrets
       secrets
     end
+
+    def self.write(address, token, path, payload, approle = nil)
+      # Vault singleton
+      Vault.address = address
+
+      # Auth with given token
+      Vault.token = token
+
+      # If approle is passed, use approle login
+      unless approle.nil?
+        # Lookup role-id
+        approle_id = Vault.approle.role_id(approle)
+
+        # Generate a secret-id
+        secret_id = Vault.approle.create_secret_id(approle).data[:secret_id]
+
+        # Login with approle auth provider
+        Vault.auth.approle(approle_id, secret_id)
+      end
+
+      # Write secret, return result
+       Vault.logical.write(path, payload)
+    end
   end
 end
